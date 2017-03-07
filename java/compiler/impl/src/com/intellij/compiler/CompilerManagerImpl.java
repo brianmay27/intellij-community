@@ -32,6 +32,7 @@ import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleType;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.projectRoots.*;
+import com.intellij.openapi.startup.StartupManager;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.util.io.FileUtil;
@@ -40,6 +41,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.profile.codeInspection.InspectionProjectProfileManager;
 import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiManager;
+import com.intellij.task.ProjectTaskManager;
 import com.intellij.util.SmartList;
 import com.intellij.util.messages.MessageBus;
 import com.intellij.util.messages.MessageBusConnection;
@@ -55,8 +57,7 @@ import org.jetbrains.jps.javac.ExternalJavacManager;
 import org.jetbrains.jps.javac.OutputFileConsumer;
 import org.jetbrains.jps.javac.OutputFileObject;
 
-import javax.tools.Diagnostic;
-import javax.tools.JavaFileObject;
+import javax.tools.*;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -117,6 +118,12 @@ public class CompilerManagerImpl extends CompilerManager {
         }
       }
     });
+    if (Boolean.valueOf(System.getProperty("rebuildPostStartup"))) {
+      StartupManager.getInstance(project).registerPostStartupActivity(() -> {
+        if (project.isDisposed()) return;
+        ProjectTaskManager.getInstance(project).rebuildAllModules();
+      });
+    }
   }
 
   public Semaphore getCompilationSemaphore() {
